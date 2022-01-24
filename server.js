@@ -27,24 +27,35 @@ const listeners = app.listen(port, () => console.log(`Listen port ${port}`));
  * trong khi các yêu cầu dns.lookup() thực hiện vì chúng gọi ra trình phân giải DNS của hệ điều hành thường chặn (mặc dù hiện nay có một số loại giao diện không đồng bộ - - nhưng chúng không nhất thiết phải được thực hiện ở mọi nơi).
  * Hiện tại, node sử dụng nội bộ dns.lookup() cho bất kỳ phân giải DNS tự động nào, chẳng hạn như khi bạn chuyển tên máy chủ cho http.request().
  */
+function validURL(str) {
+  var pattern = new RegExp(
+    "^(https?:\\/\\/)?" + // protocol
+      "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" + // domain name
+      "((\\d{1,3}\\.){3}\\d{1,3}))" + // OR ip (v4) address
+      "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" + // port and path
+      "(\\?[;&a-z\\d%_.~+=-]*)?" + // query string
+      "(\\#[-a-z\\d_]*)?$",
+    "i"
+  ); // fragment locator
+  return pattern.test(str);
+}
 let arr = [];
 app.post("/api/shorturl", (req, res) => {
   // console.log(typeof req.body.url);
-  const originalURL = req.body.url;
-  try {
-    const urlObject = new URL(originalURL); //tao doi tuong url tu url truyen vao(de lay host)
+  if (validURL(req.body.url)) {
+    const urlObject = new URL(req.body.url); //tao doi tuong url tu url truyen vao(de lay host)
     console.log(urlObject);
     dns.resolve(urlObject.hostname, (err, address) => {
       if (err) {
-        return res.json({ error: "invalid url" });
+        return res.json({ error: "invalid hostname" });
       }
       arr.push(req.body.url);
       return res.json({ original_url: req.body.url, short_url: arr.length });
     });
-  } catch (err) {
-    return res.json({ error: "invalid URL" });
+    // console.log(arr);
+  } else {
+    return res.json({ error: "invalid url" });
   }
-  // console.log(arr);
 });
 
 app.get("/api/shorturl/:short_url", (req, res) => {
