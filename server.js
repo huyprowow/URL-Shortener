@@ -23,20 +23,22 @@ const listeners = app.listen(port, () => console.log(`Listen port ${port}`));
 
 // dns.lookup(host, cb) //verify submit url
 /**
- * Về mặt đồng thời(concurrency) , tốt hơn nên sử dụng dns.resolve*() vì các yêu cầu đó không kết thúc trong nhóm luồng(threadpool),
+ * Về mặt đồng thời(concurrency) , tốt hơn nên sử dụng dns.resolve*(host,cb) vì các yêu cầu đó không kết thúc trong nhóm luồng(threadpool),
  * trong khi các yêu cầu dns.lookup() thực hiện vì chúng gọi ra trình phân giải DNS của hệ điều hành thường chặn (mặc dù hiện nay có một số loại giao diện không đồng bộ - - nhưng chúng không nhất thiết phải được thực hiện ở mọi nơi).
  * Hiện tại, node sử dụng nội bộ dns.lookup() cho bất kỳ phân giải DNS tự động nào, chẳng hạn như khi bạn chuyển tên máy chủ cho http.request().
  */
 let arr = [];
 app.post("/api/shorturl", (req, res) => {
   // console.log(typeof req.body.url);
-
-  dns.resolve(req.body.url, (err, address) => {
+  const originalURL = req.body.url;
+  const urlObject = new URL(originalURL); //tao doi tuong url tu url truyen vao(de lay host)
+  console.log(urlObject);
+  dns.resolve(urlObject.hostname, (err, address) => {
     if (err) {
-      res.json({ error: "invalid url" });
+      return res.json({ error: "invalid url" });
     }
     arr.push(req.body.url);
-    res.json({ original_url: req.body.url, short_url: arr.length });
+    return res.json({ original_url: req.body.url, short_url: arr.length });
   });
   // console.log(arr);
 });
@@ -48,11 +50,11 @@ app.get("/api/shorturl/:short_url", (req, res) => {
   if (regex.test(short_url) || short_url === "0") {
     const num_short_url = +short_url;
     if (num_short_url > arr.length) {
-      res.json({ error: "no short url found" });
+      return res.json({ error: "no short url found" });
     } else {
-      res.redirect(arr[num_short_url - 1]);
+      return res.redirect(arr[num_short_url - 1]);
     }
   } else {
-    res.json({ error: "wrong format" });
+    return res.json({ error: "wrong format" });
   }
 });
