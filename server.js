@@ -31,15 +31,19 @@ let arr = [];
 app.post("/api/shorturl", (req, res) => {
   // console.log(typeof req.body.url);
   const originalURL = req.body.url;
-  const urlObject = new URL(originalURL); //tao doi tuong url tu url truyen vao(de lay host)
-  console.log(urlObject);
-  dns.resolve(urlObject.hostname, (err, address) => {
-    if (err) {
-      return res.json({ error: "invalid url" });
-    }
-    arr.push(req.body.url);
-    return res.json({ original_url: req.body.url, short_url: arr.length });
-  });
+  try {
+    const urlObject = new URL(originalURL); //tao doi tuong url tu url truyen vao(de lay host)
+    console.log(urlObject);
+    dns.resolve(urlObject.hostname, (err, address) => {
+      if (err) {
+        return res.json({ error: "invalid url" });
+      }
+      arr.push(req.body.url);
+      return res.json({ original_url: req.body.url, short_url: arr.length });
+    });
+  } catch (err) {
+    return res.json({ error: "invalid URL" });
+  }
   // console.log(arr);
 });
 
